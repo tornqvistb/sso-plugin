@@ -282,4 +282,10 @@ public class ShibbolethAutoLogin implements AutoLogin {
 
 	}
 
+public String[] handleException(HttpServletRequest arg0, HttpServletResponse arg1, Exception arg2)
+		throws AutoLoginException {
+	// TODO Auto-generated method stub
+	return null;
+}
+
 }
