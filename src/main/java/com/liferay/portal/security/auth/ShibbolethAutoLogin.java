@@ -1,8 +1,6 @@
 package com.liferay.portal.security.auth;
 
-import java.util.Arrays;
 import java.util.Calendar;
-import java.util.List;
 import java.util.Locale;
 
 import javax.servlet.http.HttpServletRequest;
@@ -15,6 +13,7 @@ import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.Role;
+import com.liferay.portal.model.RoleConstants;
 import com.liferay.portal.model.User;
 import com.liferay.portal.service.RoleLocalServiceUtil;
 import com.liferay.portal.service.ServiceContext;
@@ -122,6 +121,15 @@ public class ShibbolethAutoLogin implements AutoLogin {
 				user = addUser(companyId, customUser);
 				_log.info("Created user with ID: " + user.getUserId());
 				addDefaultRolesToUser(companyId, user);
+				System.out.println("loginFromRequest 1");
+				user = UserLocalServiceUtil.getUserByScreenName(companyId, customUser.getUserId());
+				System.out.println("loginFromRequest 2");
+				String roles = "Roles after creation: ";
+				for (Role role : user.getRoles()) {
+					roles = roles + ", " + role.getDescription();
+				}
+				_log.info(roles);
+				System.out.println(roles);
 			}
 		}
 
@@ -132,10 +140,6 @@ public class ShibbolethAutoLogin implements AutoLogin {
 			throws Exception {
 
 		long creatorUserId = 0;
-		/*boolean autoPassword = true;
-		String password1 = null;
-		String password2 = null;
-		*/
 		boolean autoPassword = false;
 		String password1 = "!pqq678%!!";
 		String password2 = "!pqq678%!!";
@@ -204,76 +208,15 @@ public class ShibbolethAutoLogin implements AutoLogin {
 	}
 
 	private void addDefaultRolesToUser(long companyId, User user) throws Exception {
-		List<Role> roles = getAllConfiguredRoles(companyId);
-		if (roles != null && roles.size() > 0) {
-			long[] roleIds = roleListToLongArray(roles);
-			RoleLocalServiceUtil.addUserRoles(user.getUserId(), roleIds);
-	
-			_log.info("User '" + user.getScreenName() + "' has been assigned " + roleIds.length + " role(s): "
-					+ Arrays.toString(roleIds));
-		}
-		
-	}
-	private long[] roleListToLongArray(List<Role> roles) {
-		long[] roleIds = new long[roles.size()];
-
-		for (int i = 0; i < roles.size(); i++) {
-			roleIds[i] = roles.get(i).getRoleId();
-		}
-
-		return roleIds;
+		_log.info("addDefaultRolesToUser: get USER role");
+		Role userRole = RoleLocalServiceUtil.getRole(companyId, RoleConstants.USER);
+		_log.info("addDefaultRolesToUser: clear user roles");
+		RoleLocalServiceUtil.clearUserRoles(user.getUserId());
+		_log.info("addDefaultRolesToUser: add user role");
+		RoleLocalServiceUtil.addUserRole(user.getUserId(), userRole);
+		_log.info("addDefaultRolesToUser: done");
 	}
 
-	private List<Role> getAllConfiguredRoles(long companyId) throws Exception {
-		String roleSubtype = Util.autoAssignUserRoleSubtype(companyId);
-		return RoleLocalServiceUtil.getSubtypeRoles(roleSubtype);
-	}
-/*	
-	private void updateUserRolesFromSession(long companyId, User user, HttpSession session) throws Exception {
-		if (!Util.autoAssignUserRole(companyId)) {
-			return;
-		}
-
-		List<Role> currentFelRoles = getRolesFromSession(companyId, session);
-		long[] currentFelRoleIds = roleListToLongArray(currentFelRoles);
-
-		List<Role> felRoles = getAllRolesWithConfiguredSubtype(companyId);
-		long[] felRoleIds = roleListToLongArray(felRoles);
-
-		RoleLocalServiceUtil.unsetUserRoles(user.getUserId(), felRoleIds);
-		RoleLocalServiceUtil.addUserRoles(user.getUserId(), currentFelRoleIds);
-
-		_log.info("User '" + user.getScreenName() + "' has been assigned " + currentFelRoleIds.length + " role(s): "
-				+ Arrays.toString(currentFelRoleIds));
-	}
-
-
-	private List<Role> getRolesFromSession(long companyId, HttpSession session) throws SystemException {
-		List<Role> currentFelRoles = new ArrayList<Role>();
-		String affiliation = (String) session.getAttribute(ShibbolethPropsKeys.SHIBBOLETH_HEADER_AFFILIATION);
-
-		if (Validator.isNull(affiliation)) {
-			return currentFelRoles;
-		}
-
-		String[] affiliationList = affiliation.split(";");
-
-		for (int i = 0; i < affiliationList.length; i++) {
-			String roleName = affiliationList[i];
-			Role role;
-			try {
-				role = RoleLocalServiceUtil.getRole(companyId, roleName);
-			} catch (PortalException e) {
-				_log.debug("Exception while getting role with name '" + roleName + "': " + e.getMessage());
-				continue;
-			}
-
-			currentFelRoles.add(role);
-		}
-
-		return currentFelRoles;
-	}
-*/
 	private void logError(Exception e) {
 		_log.error("Exception message = " + e.getMessage() + " cause = " + e.getCause());
 		if (_log.isDebugEnabled()) {
