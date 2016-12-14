@@ -147,6 +147,7 @@ public class ShibbolethAutoLogin implements AutoLogin {
 		long facebookId = 0;
 		String openId = StringPool.BLANK;
 		Locale locale = Locale.US;
+		//Locale locale = new Locale("sv");
 		String middleName = StringPool.BLANK;
 		int prefixId = 0;
 		int suffixId = 0;
